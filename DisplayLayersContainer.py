@@ -20,8 +20,9 @@ from pxr import DisplayLayer, Sdf, Vt, UsdGeom
 
 # TODO: Issues when renaming paths - would it have been solved if I stored rels
 
+
 class DisplayLayersContainer:
-    __slots__ = ["__stage", "__path", "__layersKey", "__prim", "__layers", \
+    __slots__ = ["__stage", "__path", "__prim", "__layers", "__layersKey", \
                     "__membersKey", "__visibilityKey"]
 
     def __init__(self, stage):
@@ -31,9 +32,10 @@ class DisplayLayersContainer:
         self.__membersKey = "members"
         self.__visibilityKey = "isVisible"
 
-        # TODO: Check if a display layer prim already exists
-        # Add layer prim to stage
-        DisplayLayer.DisplayLayer.Define(stage, self.__path)
+        # Check if a display layer prim already exists
+        if not stage.GetPrimAtPath(self.__path):
+            # Add layer prim to stage
+            DisplayLayer.DisplayLayer.Define(stage, self.__path)
 
         # Convert to UsdPrim to be able to use customData
         self.__prim = stage.GetPrimAtPath(self.__path)
@@ -41,12 +43,13 @@ class DisplayLayersContainer:
         # Check if layers dictionary already exists
         self.__layers = self.__prim.GetCustomDataByKey(self.__layersKey)
 
-        # TODO: Update visibilities if layers dictionary already exists
-        
         # Create layers dictionary if it doesn't exist
         if self.__layers is None:
             self.__layers = dict()
             self.update_custom_data()
+        else:
+            # Update visibilities if layers dictionary already exists
+            self.update_all_visibilities()
 
 
     def create_new_layer(self, layer_name):
@@ -126,6 +129,11 @@ class DisplayLayersContainer:
         # TODO: Show success
 
         self.revert_visibility_of_member(path)
+
+    
+    def update_all_visibilities(self):
+        for layer_name in self.__layers.keys():
+            self.update_visibilities(layer_name)
 
 
     def update_visibilities(self, layer_name):
