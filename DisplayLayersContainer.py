@@ -20,10 +20,14 @@ from pxr import DisplayLayer, Sdf, Vt, UsdGeom
 
 # TODO: Issues when renaming paths - would it have been solved if I stored rels
 
+# TODO: Should I consider allowing prims other than UsdGeom to be added? E.g., groups
+
+# TODO: Try to leverage overs for changing visibility?
 
 class DisplayLayersContainer:
     __slots__ = ["__stage", "__path", "__prim", "__layers", "__layersKey", \
-                    "__membersKey", "__visibilityKey"]
+                    "__membersKey", "__visibilityKey", "__colorKey", \
+                    "__defaultColor"]
 
     def __init__(self, stage):
         self.__stage = stage
@@ -31,6 +35,8 @@ class DisplayLayersContainer:
         self.__layersKey = "layers"
         self.__membersKey = "members"
         self.__visibilityKey = "isVisible"
+        self.__colorKey = "color"
+        self.__defaultColor = (128, 128, 128) # default to gray
 
         # Check if a display layer prim already exists
         if not stage.GetPrimAtPath(self.__path):
@@ -60,7 +66,8 @@ class DisplayLayersContainer:
 
         self.__layers[layer_name] = { \
             self.__membersKey: dict(), \
-            self.__visibilityKey: True \
+            self.__visibilityKey: True, \
+            self.__colorKey: self.__defaultColor
         }
 
         self.update_custom_data()
@@ -69,8 +76,8 @@ class DisplayLayersContainer:
     def remove_layer(self, layer_name):
         # TODO: How to update visibility?
 
-        if layer_name not in self.__layers:
-            return # TODO: Throw error
+        # Check if layer exists
+        self.check_layer_exists(layer_name)
 
         self.revert_visibility_of_layer(layer_name)
         
@@ -82,9 +89,7 @@ class DisplayLayersContainer:
         # Maybe use API/rel for this
 
         # Check if layer exists
-        if layer_name not in self.__layers:
-            pass # TODO: Throw error
-            return
+        self.check_layer_exists(layer_name)
 
         # Check if prim is already in a display layer
         already_added = False
@@ -116,9 +121,7 @@ class DisplayLayersContainer:
 
     def remove_item_from_layer(self, layer_name, path):
         # Check if layer exists
-        if layer_name not in self.__layers:
-            pass # TODO: Throw error
-            return
+        self.check_layer_exists(layer_name)
 
         if path not in self.__layers[layer_name][self.__membersKey]:
             # TODO: Throw error
@@ -138,9 +141,7 @@ class DisplayLayersContainer:
 
     def update_visibilities(self, layer_name):
         # Check if layer exists
-        if layer_name not in self.__layers:
-            pass # TODO: Throw error
-            return
+        self.check_layer_exists(layer_name)
 
         visibilityToken = self.get_visibility_token(
             self.__layers[layer_name][self.__visibilityKey])
@@ -157,9 +158,7 @@ class DisplayLayersContainer:
 
     def update_visibility_of_member(self, layer_name, path):
         # Check if layer exists
-        if layer_name not in self.__layers:
-            pass # TODO: Throw error
-            return
+        self.check_layer_exists(layer_name)
 
         if path not in self.__layers[layer_name][self.__membersKey]:
             # TODO: Throw error
@@ -180,9 +179,7 @@ class DisplayLayersContainer:
 
     def toggle_layer_visibility(self, layer_name):
         # Check if layer exists
-        if layer_name not in self.__layers:
-            pass # TODO: Throw error
-            return
+        self.check_layer_exists(layer_name)
 
         current_visibility = self.__layers[layer_name][self.__visibilityKey]
 
@@ -191,9 +188,7 @@ class DisplayLayersContainer:
 
     def set_layer_visibility(self, layer_name, isVisible):
         # Check if layer exists
-        if layer_name not in self.__layers:
-            pass # TODO: Throw error
-            return
+        self.check_layer_exists(layer_name)
 
         self.__layers[layer_name][self.__visibilityKey] = isVisible
 
@@ -209,9 +204,7 @@ class DisplayLayersContainer:
 
     def set_visibilities(self, layer_name, visibilityToken):
         # Check if layer exists
-        if layer_name not in self.__layers:
-            pass # TODO: Throw error
-            return
+        self.check_layer_exists(layer_name)
         
         for member in self.__layers[layer_name][self.__membersKey].keys():
             prim = self.__stage.GetPrimAtPath(member)
@@ -238,3 +231,23 @@ class DisplayLayersContainer:
 
     def update_custom_data(self):
         self.__prim.SetCustomDataByKey(self.__layersKey, self.__layers)
+
+
+    def change_layer_color(self, layer_name, color):
+        # Check if layer exists
+        self.check_layer_exists(layer_name)
+
+        # Check if color is valid
+        if len(color != 3) or not all(0 <= val <= 255 for val in color):
+            # TODO: Throw error
+            return
+
+        self.__layers[layer_name][self.__colorKey] = color
+
+        self.update_custom_data()
+
+
+    def check_layer_exists(self, layer_name):
+        if layer_name not in self.__layers:
+            pass # TODO: Throw error
+            return
