@@ -24,6 +24,10 @@ from pxr import DisplayLayer, Sdf, Vt, UsdGeom
 
 # TODO: Try to leverage overs for changing visibility?
 
+# TODO: Is it okay to store String instead of SdfPath
+
+# TODO: Does the observer pattern make sense
+
 class DisplayLayersContainer:
     __slots__ = ["__stage", "__path", "__prim", "__layers", "__layersKey", \
                     "__membersKey", "__visibilityKey", "__colorKey", \
@@ -84,7 +88,7 @@ class DisplayLayersContainer:
         # Check if layer exists
         self.check_layer_exists(layer_name)
 
-        self.revert_visibility_of_layer(layer_name)
+        self.set_layer_visibility(layer_name, True)
         
         del self.__layers[layer_name]
         self.update_custom_data()
@@ -159,7 +163,7 @@ class DisplayLayersContainer:
 
     def get_visibility_token(self, isVisible):
         if isVisible:
-            return UsdGeom.Tokens.visible
+            return UsdGeom.Tokens.inherited
         else:
             return UsdGeom.Tokens.invisible
 
@@ -198,29 +202,36 @@ class DisplayLayersContainer:
         # Check if layer exists
         self.check_layer_exists(layer_name)
 
+        print("Inside set layer visibility", isVisible)
+
+        # If current visibility is the same as the new one, return
+        if self.__layers[layer_name][self.__visibilityKey] == isVisible:
+            print("visibility already", isVisible)
+            return
+
         self.__layers[layer_name][self.__visibilityKey] = isVisible
 
         self.update_custom_data()
 
         self.update_visibilities(layer_name)
 
-
-    def revert_visibility_of_layer(self, layer_name):
-        isVisible = UsdGeom.Tokens.inherited
-        self.set_visibilities(layer_name, isVisible)
-
-
     def set_visibilities(self, layer_name, visibilityToken):
         # Check if layer exists
         self.check_layer_exists(layer_name)
+
+        print("Inside set visibilities")
+        print(visibilityToken)
         
         for member in self.__layers[layer_name][self.__membersKey].keys():
             prim = self.__stage.GetPrimAtPath(member)
 
-            if not prim or not UsdGeom.Imageable(prim):
+            if not prim:
                 # TODO: Either throw error or delete this member
                 del self.__layers[layer_name][self.__membersKey][member]
                 continue
+
+            if not UsdGeom.Imageable(prim):
+                raise Exception("Prim is not a UsdGeom")
             
             prim = UsdGeom.Imageable(prim)
             prim.GetVisibilityAttr().Set(visibilityToken)

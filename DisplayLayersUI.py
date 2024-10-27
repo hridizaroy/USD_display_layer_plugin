@@ -126,25 +126,32 @@ class DisplayLayersUI:
         colPos += 1
 
         # Visibility
-        visibilityCheckbox = QtWidgets.QTableWidgetItem()
-        visibilityCheckbox.setFlags(visibilityCheckbox.flags() | QtCore.Qt.ItemIsUserCheckable)
-        visibilityCheckbox.setCheckState(QtCore.Qt.Checked)
-        self.__table.setItem(rowPos, colPos, visibilityCheckbox)
+        visibilityCheckbox = QtWidgets.QCheckBox()
+        visibilityCheckbox.setChecked(True)
+        visibilityCheckbox.stateChanged.connect(lambda state, layer = layer_name: \
+            self.__displayLayersContainer.set_layer_visibility(\
+            layer, state == QtCore.Qt.Checked))
+        self.__table.setCellWidget(rowPos, colPos, visibilityCheckbox)
         colPos += 1
 
         # Add selected
-        self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem("stub"))
+        addSelectedButton = QtWidgets.QPushButton("Add")
+        addSelectedButton.clicked.connect(lambda: \
+            self.add_selected_to_layer(layer_name))
+        self.__table.setCellWidget(rowPos, colPos, addSelectedButton)
         colPos += 1
 
         # Remove selected
-        self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem("stub"))
+        removeSelected = QtWidgets.QPushButton("Remove")
+        removeSelected.clicked.connect(lambda: \
+            self.remove_selected_from_layer(layer_name))
+        self.__table.setCellWidget(rowPos, colPos, removeSelected)
         colPos += 1
 
         # Highlight
-        highlightCheckbox = QtWidgets.QTableWidgetItem()
-        highlightCheckbox.setFlags(highlightCheckbox.flags() | QtCore.Qt.ItemIsUserCheckable)
-        highlightCheckbox.setCheckState(QtCore.Qt.Unchecked)
-        self.__table.setItem(rowPos, colPos, highlightCheckbox)
+        highlightCheckbox = QtWidgets.QCheckBox()
+        highlightCheckbox.setChecked(False)
+        self.__table.setCellWidget(rowPos, colPos, highlightCheckbox)
         colPos += 1
 
         # Delete
@@ -162,3 +169,18 @@ class DisplayLayersUI:
 
             if layer and layer.text() == layer_name:
                 self.__table.removeRow(row) 
+
+    
+    def add_selected_to_layer(self, layer_name):
+        prims = self.usdviewApi.dataModel.selection.getPrims()
+
+        for prim in prims:
+            path = prim.GetPath().pathString
+            self.__displayLayersContainer.add_item_to_layer(layer_name, path)
+
+    def remove_selected_from_layer(self, layer_name):
+        prims = self.usdviewApi.dataModel.selection.getPrims()
+
+        for prim in prims:
+            path = prim.GetPath().pathString
+            self.__displayLayersContainer.remove_item_from_layer(layer_name, path)
