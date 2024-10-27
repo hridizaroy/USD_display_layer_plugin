@@ -27,7 +27,7 @@ from pxr import DisplayLayer, Sdf, Vt, UsdGeom
 class DisplayLayersContainer:
     __slots__ = ["__stage", "__path", "__prim", "__layers", "__layersKey", \
                     "__membersKey", "__visibilityKey", "__colorKey", \
-                    "__defaultColor"]
+                    "__defaultColor", "__observer"]
 
     def __init__(self, stage):
         self.__stage = stage
@@ -37,6 +37,8 @@ class DisplayLayersContainer:
         self.__visibilityKey = "isVisible"
         self.__colorKey = "color"
         self.__defaultColor = (128, 128, 128) # default to gray
+
+        self.__observer = None
 
         # Check if a display layer prim already exists
         if not stage.GetPrimAtPath(self.__path):
@@ -72,6 +74,9 @@ class DisplayLayersContainer:
 
         self.update_custom_data()
 
+        if self.__observer:
+            self.__observer.new_layer_added(layer_name)
+
 
     def remove_layer(self, layer_name):
         # TODO: How to update visibility?
@@ -83,6 +88,9 @@ class DisplayLayersContainer:
         
         del self.__layers[layer_name]
         self.update_custom_data()
+
+        if self.__observer:
+            self.__observer.layer_removed(layer_name)
 
 
     def add_item_to_layer(self, layer_name, path):
@@ -246,8 +254,16 @@ class DisplayLayersContainer:
 
         self.update_custom_data()
 
+    
+    def change_layer_highlight(self, layer_name, highlight):
+        pass
+
 
     def check_layer_exists(self, layer_name):
         if layer_name not in self.__layers:
             pass # TODO: Throw error
             return
+
+    def register_observer(self, observer):
+        self.__observer = observer
+
