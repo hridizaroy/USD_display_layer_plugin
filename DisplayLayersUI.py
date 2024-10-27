@@ -2,11 +2,9 @@ import DisplayLayersContainer
 
 from pxr.Usdviewq.qt import QtWidgets, QtCore
 
-# TODO: Consider Observer pattern?
-
 class DisplayLayersUI:
     __slots__ = ["__displayLayersContainer", "__layerNameInput", "__table", \
-                "usdviewApi"]
+                "usdviewApi", "__layerNameCol"]
     def __init__(self, usdviewApi):
         self.__displayLayersContainer = \
             DisplayLayersContainer.DisplayLayersContainer(usdviewApi.dataModel.stage)
@@ -16,6 +14,7 @@ class DisplayLayersUI:
 
         table_header = ["Layer name", "Layer color", "Visible", "Add selected", \
                         "Remove selected", "Highlight", "Delete"]
+        self.__layerNameCol = 0
         self.__table = QtWidgets.QTableWidget()
         self.__table.setColumnCount(len(table_header))
 
@@ -25,7 +24,7 @@ class DisplayLayersUI:
     def open_display_layers_UI(self):
         window = self.usdviewApi.qMainWindow
         dialog = QtWidgets.QDialog(window)
-        dialog.setWindowTitle("Create new layer")
+        dialog.setWindowTitle("Display Layers")
 
         dialog.setMinimumWidth((window.size().width()/1.5))
 
@@ -101,7 +100,7 @@ class DisplayLayersUI:
         buttonLayout.addWidget(closeButton)
         buttonLayout.addWidget(createButton)
 
-        closeButton.clicked.connect(lambda : dialog.close())
+        closeButton.clicked.connect(lambda: dialog.close())
         createButton.clicked.connect(lambda: ( \
                 self.__displayLayersContainer.create_new_layer(\
                 self.__layerNameInput.text()), \
@@ -110,29 +109,56 @@ class DisplayLayersUI:
         
         return buttonLayout
 
-    def new_layer_added(layer_name):
+    def new_layer_added(self, layer_name):
         # Add new row to table
-        row_pos = self.__table.rowCount()
-        self.__table.insertRow(row_pos)
+        rowPos = self.__table.rowCount()
+        self.__table.insertRow(rowPos)
 
         # Populate new row
+        colPos = 0
 
         # Layer name
-        self.table.setItem(row_position, 0, QTableWidgetItem(layer_name))
+        self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem(layer_name))
+        colPos += 1
 
         # Color
-        self.table.setItem(row_position, 1, QTableWidgetItem("stub"))
+        self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem("stub"))
+        colPos += 1
 
         # Visibility
+        visibilityCheckbox = QtWidgets.QTableWidgetItem()
+        visibilityCheckbox.setFlags(visibilityCheckbox.flags() | QtCore.Qt.ItemIsUserCheckable)
+        visibilityCheckbox.setCheckState(QtCore.Qt.Checked)
+        self.__table.setItem(rowPos, colPos, visibilityCheckbox)
+        colPos += 1
 
         # Add selected
+        self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem("stub"))
+        colPos += 1
 
         # Remove selected
+        self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem("stub"))
+        colPos += 1
 
         # Highlight
+        highlightCheckbox = QtWidgets.QTableWidgetItem()
+        highlightCheckbox.setFlags(highlightCheckbox.flags() | QtCore.Qt.ItemIsUserCheckable)
+        highlightCheckbox.setCheckState(QtCore.Qt.Unchecked)
+        self.__table.setItem(rowPos, colPos, highlightCheckbox)
+        colPos += 1
 
         # Delete
+        deleteButton = QtWidgets.QPushButton("X")
+        deleteButton.clicked.connect(lambda: \
+            self.__displayLayersContainer.remove_layer(layer_name))
+        self.__table.setCellWidget(rowPos, colPos, deleteButton)
 
-    def layer_removed(layer_name):
+    def layer_removed(self, layer_name):
         # loop through table until you find the layer
-        pass
+        numRows = self.__table.rowCount()
+
+        for row in range(numRows):
+            layer = self.__table.item(row, self.__layerNameCol)
+
+            if layer and layer.text() == layer_name:
+                self.__table.removeRow(row) 

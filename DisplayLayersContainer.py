@@ -262,6 +262,7 @@ class DisplayLayersContainer:
     def check_layer_exists(self, layer_name):
         if layer_name not in self.__layers:
             pass # TODO: Throw error
+            raise Exception(str(layer_name) + " does not exist")
             return
 
     def register_observer(self, observer):
