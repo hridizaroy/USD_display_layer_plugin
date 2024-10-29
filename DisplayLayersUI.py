@@ -4,18 +4,6 @@ from pxr.Usdviewq.qt import QtWidgets, QtCore
 
 # TODO: Consider making DisplayLayersUI a child of QMainWindow?
 
-class ButtonThread(QtCore.QThread):
-    finished = QtCore.Signal()
-
-    def __init__(self, function, args):
-        super().__init__()
-        self.function = function
-        self.args = args
-
-    def run(self):
-        self.function(*self.args)
-        self.finished.emit()
-
 class DisplayLayersUI:
     __slots__ = ["__displayLayersContainer", "__layerNameInput", "__table", \
                 "usdviewApi", "__layerNameCol", "__activeThreads"]
@@ -141,10 +129,12 @@ class DisplayLayersUI:
         colPos += 1
 
         # Visibility
+        QT_CHECKED_STATE = 2
         visibilityCheckbox = QtWidgets.QCheckBox()
         visibilityCheckbox.setChecked(True)
         visibilityCheckbox.stateChanged.connect(lambda state, layer = layer_name: \
-                                self.visibility_checkbox_clicked(state, layer))
+                        self.__displayLayersContainer.set_layer_visibility( \
+                        layer, state == QT_CHECKED_STATE))
         self.__table.setCellWidget(rowPos, colPos, visibilityCheckbox)
         colPos += 1
 
@@ -173,22 +163,6 @@ class DisplayLayersUI:
         deleteButton.clicked.connect(lambda: \
             self.__displayLayersContainer.remove_layer(layer_name))
         self.__table.setCellWidget(rowPos, colPos, deleteButton)
-
-    def visibility_checkbox_clicked(self, state, layer_name):
-        QT_CHECKED = 2
-        thread = ButtonThread(self.__displayLayersContainer.set_layer_visibility, \
-                    (layer_name, state == 2))
-
-        thread.finished.connect(lambda: self.thread_finished(thread))
-
-        self.__activeThreads.append(thread)
-        thread.start()
-
-    def thread_finished(self, thread):
-        if thread in self.__activeThreads:
-            self.__activeThreads.remove(thread)
-        
-        thread.deleteLater()
 
     def layer_removed(self, layer_name):
         # loop through table until you find the layer
