@@ -4,7 +4,7 @@ from pxr.Usdviewq.qt import QtWidgets, QtCore
 
 class DisplayLayersUI:
     __slots__ = ["__displayLayersContainer", "__layerNameInput", "__table", \
-                "usdviewApi", "__layerNameCol"]
+                "usdviewApi", "__layerNameCol", "__uiWindowThread"]
     def __init__(self, usdviewApi):
         self.__displayLayersContainer = \
             DisplayLayersContainer.DisplayLayersContainer(usdviewApi.dataModel.stage)
@@ -22,6 +22,12 @@ class DisplayLayersUI:
 
 
     def open_display_layers_UI(self):
+        self.__uiWindowThread = UIWindowThread()
+        self.__uiWindowThread.dialogRequested.connect(lambda : \
+                                                self.create_and_show_main_UI())
+        self.__uiWindowThread.start()
+
+    def create_and_show_main_UI(self):
         window = self.usdviewApi.qMainWindow
         dialog = QtWidgets.QDialog(window)
         dialog.setWindowTitle("Display Layers")
@@ -32,7 +38,7 @@ class DisplayLayersUI:
         layout = self.generate_main_UI_layout(dialog)
         dialog.setLayout(layout)
 
-        dialog.exec_()
+        dialog.show()
 
     def generate_main_UI_layout(self, dialog):
         # VBox for overall
@@ -184,3 +190,13 @@ class DisplayLayersUI:
         for prim in prims:
             path = prim.GetPath().pathString
             self.__displayLayersContainer.remove_item_from_layer(layer_name, path)
+
+
+class UIWindowThread(QtCore.QThread):
+    dialogRequested = QtCore.Signal()
+
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        self.dialogRequested.emit()

@@ -4,12 +4,10 @@ from pxr.Usdviewq.common import QtWidgets, QtCore
 
 from pxr import DisplayLayer
 
-import DisplayLayersUI
-
 
 class DisplayLayersPluginContainer(PluginContainer):
     def registerPlugins(self, plugRegistry, usdviewApi):
-        # displayLayersUIModule = self.deferredImport(".DisplayLayersUI")
+        self.displayLayersUIModule = self.deferredImport(".DisplayLayersUI")
 
         sendMail = self.deferredImport(".sendMail")
 
@@ -29,7 +27,7 @@ class DisplayLayersPluginContainer(PluginContainer):
 
     def openDisplayLayersUI(self, usdviewApi):
         if not self._displayLayersUI:
-            self._displayLayersUI = DisplayLayersUI.DisplayLayersUI(usdviewApi)
+            self._displayLayersUI = self.displayLayersUIModule.DisplayLayersUI(usdviewApi)
 
         self._displayLayersUI.open_display_layers_UI()
         
