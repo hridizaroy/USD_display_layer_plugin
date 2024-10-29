@@ -5,6 +5,7 @@ from pxr.Usdviewq.qt import QtWidgets, QtCore
 class DisplayLayersUI:
     __slots__ = ["__displayLayersContainer", "__layerNameInput", "__table", \
                 "usdviewApi", "__layerNameCol"]
+                
     def __init__(self, usdviewApi):
         self.__displayLayersContainer = \
             DisplayLayersContainer.DisplayLayersContainer(usdviewApi.dataModel.stage)
@@ -12,8 +13,8 @@ class DisplayLayersUI:
 
         self.usdviewApi = usdviewApi
 
-        table_header = ["Layer name", "Layer color", "Visible", "Add selected", \
-                        "Remove selected", "Highlight", "Delete"]
+        table_header = ["Layer name", "Visible", "Add selected", \
+                        "Remove selected", "Delete"]
         self.__layerNameCol = 0
         self.__table = QtWidgets.QTableWidget()
         self.__table.setColumnCount(len(table_header))
@@ -121,10 +122,6 @@ class DisplayLayersUI:
         self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem(layer_name))
         colPos += 1
 
-        # Color
-        self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem("stub"))
-        colPos += 1
-
         # Visibility
         QT_CHECKED_STATE = 2
         visibilityCheckbox = QtWidgets.QCheckBox()
@@ -147,12 +144,6 @@ class DisplayLayersUI:
         removeSelected.clicked.connect(lambda: \
             self.remove_selected_from_layer(layer_name))
         self.__table.setCellWidget(rowPos, colPos, removeSelected)
-        colPos += 1
-
-        # Highlight
-        highlightCheckbox = QtWidgets.QCheckBox()
-        highlightCheckbox.setChecked(False)
-        self.__table.setCellWidget(rowPos, colPos, highlightCheckbox)
         colPos += 1
 
         # Delete
