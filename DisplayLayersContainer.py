@@ -202,11 +202,8 @@ class DisplayLayersContainer:
         # Check if layer exists
         self.check_layer_exists(layer_name)
 
-        print("Inside set layer visibility", isVisible)
-
         # If current visibility is the same as the new one, return
         if self.__layers[layer_name][self.__visibilityKey] == isVisible:
-            print("visibility already", isVisible)
             return
 
         self.__layers[layer_name][self.__visibilityKey] = isVisible
@@ -218,9 +215,6 @@ class DisplayLayersContainer:
     def set_visibilities(self, layer_name, visibilityToken):
         # Check if layer exists
         self.check_layer_exists(layer_name)
-
-        print("Inside set visibilities")
-        print(visibilityToken)
         
         for member in self.__layers[layer_name][self.__membersKey].keys():
             prim = self.__stage.GetPrimAtPath(member)

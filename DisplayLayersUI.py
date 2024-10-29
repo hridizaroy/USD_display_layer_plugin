@@ -2,9 +2,23 @@ import DisplayLayersContainer
 
 from pxr.Usdviewq.qt import QtWidgets, QtCore
 
+# TODO: Consider making DisplayLayersUI a child of QMainWindow?
+
+class ButtonThread(QtCore.QThread):
+    finished = QtCore.Signal()
+
+    def __init__(self, function, args):
+        super().__init__()
+        self.function = function
+        self.args = args
+
+    def run(self):
+        self.function(*self.args)
+        self.finished.emit()
+
 class DisplayLayersUI:
     __slots__ = ["__displayLayersContainer", "__layerNameInput", "__table", \
-                "usdviewApi", "__layerNameCol", "__uiWindowThread"]
+                "usdviewApi", "__layerNameCol", "__activeThreads"]
     def __init__(self, usdviewApi):
         self.__displayLayersContainer = \
             DisplayLayersContainer.DisplayLayersContainer(usdviewApi.dataModel.stage)
@@ -19,15 +33,10 @@ class DisplayLayersUI:
         self.__table.setColumnCount(len(table_header))
 
         self.__table.setHorizontalHeaderLabels(table_header)
+        self.__activeThreads = []
 
 
     def open_display_layers_UI(self):
-        self.__uiWindowThread = UIWindowThread()
-        self.__uiWindowThread.dialogRequested.connect(lambda : \
-                                                self.create_and_show_main_UI())
-        self.__uiWindowThread.start()
-
-    def create_and_show_main_UI(self):
         window = self.usdviewApi.qMainWindow
         dialog = QtWidgets.QDialog(window)
         dialog.setWindowTitle("Display Layers")
@@ -80,7 +89,7 @@ class DisplayLayersUI:
         layout = self.generate_create_new_layer_layout(dialog)
         dialog.setLayout(layout)
 
-        dialog.exec_()
+        dialog.show()
 
     def generate_create_new_layer_layout(self, dialog):
         layerNamelabel = QtWidgets.QLabel("Layer name:")
@@ -135,8 +144,7 @@ class DisplayLayersUI:
         visibilityCheckbox = QtWidgets.QCheckBox()
         visibilityCheckbox.setChecked(True)
         visibilityCheckbox.stateChanged.connect(lambda state, layer = layer_name: \
-            self.__displayLayersContainer.set_layer_visibility(\
-            layer, state == QtCore.Qt.Checked))
+                                self.visibility_checkbox_clicked(state, layer))
         self.__table.setCellWidget(rowPos, colPos, visibilityCheckbox)
         colPos += 1
 
@@ -166,6 +174,22 @@ class DisplayLayersUI:
             self.__displayLayersContainer.remove_layer(layer_name))
         self.__table.setCellWidget(rowPos, colPos, deleteButton)
 
+    def visibility_checkbox_clicked(self, state, layer_name):
+        QT_CHECKED = 2
+        thread = ButtonThread(self.__displayLayersContainer.set_layer_visibility, \
+                    (layer_name, state == 2))
+
+        thread.finished.connect(lambda: self.thread_finished(thread))
+
+        self.__activeThreads.append(thread)
+        thread.start()
+
+    def thread_finished(self, thread):
+        if thread in self.__activeThreads:
+            self.__activeThreads.remove(thread)
+        
+        thread.deleteLater()
+
     def layer_removed(self, layer_name):
         # loop through table until you find the layer
         numRows = self.__table.rowCount()
@@ -190,13 +214,3 @@ class DisplayLayersUI:
         for prim in prims:
             path = prim.GetPath().pathString
             self.__displayLayersContainer.remove_item_from_layer(layer_name, path)
-
-
-class UIWindowThread(QtCore.QThread):
-    dialogRequested = QtCore.Signal()
-
-    def __init__(self):
-        super().__init__()
-
-    def run(self):
-        self.dialogRequested.emit()
