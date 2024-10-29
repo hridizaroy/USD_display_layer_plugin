@@ -2,11 +2,9 @@ import DisplayLayersContainer
 
 from pxr.Usdviewq.qt import QtWidgets, QtCore
 
-# TODO: Consider making DisplayLayersUI a child of QMainWindow?
-
 class DisplayLayersUI:
     __slots__ = ["__displayLayersContainer", "__layerNameInput", "__table", \
-                "usdviewApi", "__layerNameCol", "__activeThreads"]
+                "usdviewApi", "__layerNameCol"]
     def __init__(self, usdviewApi):
         self.__displayLayersContainer = \
             DisplayLayersContainer.DisplayLayersContainer(usdviewApi.dataModel.stage)
@@ -21,7 +19,6 @@ class DisplayLayersUI:
         self.__table.setColumnCount(len(table_header))
 
         self.__table.setHorizontalHeaderLabels(table_header)
-        self.__activeThreads = []
 
 
     def open_display_layers_UI(self):

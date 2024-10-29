@@ -1,33 +1,5 @@
 from pxr import DisplayLayer, Sdf, Vt, UsdGeom
 
-# TODO: How to handle case where a layer's member is deleted
-# The API might help in that case?
-
-# TODO: Maybe create members with a max_size (fixed size array)
-    # Maybe double size if full
-
-# TODO: Maybe create another class in the schema tht stores a list of display layers
-
-# TODO: How to get pre-existing display layers
-
-# TODO: Is saving layers attribute worth it? I'm doing it for efficiency purposes
-# To avoid the conversion overhead of GetCustomDataByKey
-
-# TODO: is the displaylayer custom schema justified? It basically has nothing
-# Is there some alternative?
-
-# TODO: Is prim.GetVisibilityAttr().Set(UsdGeom.Tokens.inherited) a good way to revert visibility?
-
-# TODO: Issues when renaming paths - would it have been solved if I stored rels
-
-# TODO: Should I consider allowing prims other than UsdGeom to be added? E.g., groups
-
-# TODO: Try to leverage overs for changing visibility?
-
-# TODO: Is it okay to store String instead of SdfPath
-
-# TODO: Does the observer pattern make sense
-
 class DisplayLayersContainer:
     __slots__ = ["__stage", "__path", "__prim", "__layers", "__layersKey", \
                     "__membersKey", "__visibilityKey", "__colorKey", \
