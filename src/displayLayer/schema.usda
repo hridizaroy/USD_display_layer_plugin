@@ -1,0 +1,55 @@
+#usda 1.0
+(
+    "This file defines a custom display layer schema"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "displayLayer"
+        string libraryPath = "."
+        string libraryPrefix = "DisplayLayer"
+    }
+)
+{
+}
+
+class DisplayLayer "DisplayLayer" (
+    inherits = </Typed>
+    doc = """Represents display layers for organizing and controlling visibility of prims."""
+
+	customData = {
+		string className = "DisplayLayer"        
+        dictionary layers = {
+            bool testField = true   
+        }
+	}
+)
+{
+    
+    bool visible = true (
+        doc = "Controls the visibility of all prims in this layer."
+    )
+    # color3f color = (0.5, 0.5, 0.5) (
+    #     doc = "The display color for this layer in the UI."
+    # )
+    # string[] members = [] (
+    #     doc = "Paths to prims that are members of this display layer."
+    # )
+    # int layerIndex = 0 (
+    #     doc = "Determines the placement of this layer in the UI."
+    # )
+}
+
+
+# class "DisplayLayerAPI" (
+#    inherits = </APISchemaBase>
+#    doc = """API to associate a prim with a display layer."""
+# )
+# {
+#    rel displayLayer (
+#        doc = "Relationship to the associated DisplayLayer prim."
+#    )
+# }
