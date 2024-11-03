@@ -189,7 +189,7 @@ private:
 
     /// Updates display color of the prim at the given path
     bool updateMemberHighlight(const SdfPath& path,
-                        const std::string& layerName, bool isHighlighted) const
+                        const std::string& layerName, bool isHighlighted);
 
     /// Updates display color of the members of the given layer based on 
     /// if the layer is highlighted

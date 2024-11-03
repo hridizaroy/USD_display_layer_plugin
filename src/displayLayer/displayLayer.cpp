@@ -156,7 +156,7 @@ bool DisplayLayerDisplayLayer::updateMemberVisibility(const SdfPath& path,
 }
 
 bool DisplayLayerDisplayLayer::updateMemberHighlight(const SdfPath& path,
-                        const std::string& layerName, bool isHighlighted) const
+                        const std::string& layerName, bool isHighlighted)
 {
     if (!layerExists(layerName))
     {
@@ -170,8 +170,6 @@ bool DisplayLayerDisplayLayer::updateMemberHighlight(const SdfPath& path,
     {
         return false;
     }
-
-    auto visibilityToken = getVisibilityToken(isVisible);
 
     // Make sure we're making the edits in our highlight layer
     UsdEditContext editContext(stage, UsdEditTarget(layers[layerName].highlightLayer));
