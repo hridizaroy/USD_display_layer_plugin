@@ -165,18 +165,33 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-#include <pxr/base/vt/dictionary.h>
-#include <pxr/usd/usd/layer.h>
+#include <pxr/usd/sdf/layer.h>
+#include <unordered_map>
+#include <unordered_set>
 
 private:
-    VtDictionary layers;
-    const UsdStagePtr stage;
-    UsdLayerRefPtr overrideLayer;
+    struct Layer
+    {
+        // Using string instead of SdfPath because of hashing issues
+        std::unordered_set<std::string> members;
+        bool isVisible;
+
+        bool operator==(const Layer& other) const
+        {
+            return isVisible == other.isVisible && members == other.members;
+        }
+    };
+
+    std::unordered_map<std::string, Layer> layers;
+    UsdStagePtr stage;
+    SdfLayerRefPtr overrideLayer;
 
     // Keys
-    const TfToken layersKey = TfToken("layers");
-    const TfToken membersKey = TfToken("members");
-    const TfToken visibilityKey = TfToken("isVisible");
+    const TfToken LAYERS_KEY = TfToken("layers");
+    const TfToken MEMBERS_KEY = TfToken("members");
+    const TfToken VISIBILITY_KEY = TfToken("isVisible");
+
+    const std::string OVERRIDE_LAYER_NAME = "displayLayerOverrides.usda";
 
     bool layerExists(const std::string& layerName) const;
 
@@ -184,11 +199,18 @@ private:
 
     bool updateMemberVisibility(const SdfPath& path, bool isVisible);
 
+    /**
+    * Converts the layers map to a VtDictionary and adds it to the prim's metadata
+    */
     void updateMetadata() const;
 
 public:
     DISPLAYLAYER_API
-    void initialize(const UsdStagePtr &stage, VtDictionary& data = VtDictionary());
+    void initialize(const UsdStagePtr &stage);
+
+    DISPLAYLAYER_API
+    void initialize(const UsdStagePtr &stage,
+                    const VtDictionary& data = VtDictionary());
 
     DISPLAYLAYER_API
     void createNewLayer(const std::string& layerName);

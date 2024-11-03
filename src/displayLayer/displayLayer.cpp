@@ -147,26 +147,29 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <stdexcept>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/dictionary.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool DisplayLayerDisplayLayer::layerExists(const std::string& layerName)
+
+bool DisplayLayerDisplayLayer::layerExists(const std::string& layerName) const
 {
-    return self.layers.count(layerName) > 0;
+    return layers.find(layerName) != layers.end();
 }
 
-TfToken DisplayLayerDisplayLayer::getVisibilityToken(const bool isVisible)
+TfToken DisplayLayerDisplayLayer::getVisibilityToken(const bool isVisible) const
 {
-    return UsdGeomTokens->inherited ? isVisible : UsdGeomTokens->invisible;
+    return isVisible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible;
 }
 
 /**
 * The function calling this is responsible for setting stage edit target
- */
+*/
 bool DisplayLayerDisplayLayer::updateMemberVisibility(const SdfPath& path,
                                                         bool isVisible)
 {
-    auto prim = this.stage->GetPrimAtPath(path);
+    auto prim = stage->GetPrimAtPath(path);
 
     if (!prim || !UsdGeomImageable(prim))
     {
@@ -181,25 +184,62 @@ bool DisplayLayerDisplayLayer::updateMemberVisibility(const SdfPath& path,
     return true;
 }
 
-void DisplayLayerDisplayLayer::updateMetadata()
+void DisplayLayerDisplayLayer::updateMetadata() const
 {
-    GetPrim().SetCustomDataByKey(layersKey, layers);
+    VtDictionary data;
+
+    for (const auto& pair : layers)
+    {
+        const std::string& layerName = pair.first;
+        const Layer& layer = pair.second;
+
+        VtDictionary layerData;
+        VtArray<SdfPath> members;
+
+        for (const auto& member : layer.members)
+        {
+            members.push_back(SdfPath(member));
+        }
+
+        layerData[VISIBILITY_KEY] = layer.isVisible;
+        layerData[MEMBERS_KEY] = members;
+
+        data[layerName] = layerData;
+    }
+
+    GetPrim().SetCustomDataByKey(LAYERS_KEY, VtValue(layers));
 }
 
 
-void DisplayLayerDisplayLayer::initialize(
-            const UsdStagePtr &stage, VtDictionary& data = VtDictionary())
+void DisplayLayerDisplayLayer::initialize(const UsdStagePtr &stage)
 {
-    this.stage = stage;
-    this.layers = data;
+    this->stage = stage;
+    overrideLayer = SdfLayer::CreateNew(OVERRIDE_LAYER_NAME);
+}
 
-    overrideLayer = UsdLayer::CreateNew("displayLayerOverrides.usda");
 
-    if (data.empty())
+void DisplayLayerDisplayLayer::initialize(const UsdStagePtr &stage,
+                                            const VtDictionary& data)
+{
+    this->stage = stage;
+    overrideLayer = SdfLayer::CreateNew(OVERRIDE_LAYER_NAME);
+
+    for (auto& item : data)
     {
-        updateMetadata();
+        const std::string& layerName = item.first;
+        VtDictionary value = item.second.Get<VtDictionary>();
+
+        layers[layerName].isVisible = value[VISIBILITY_KEY].Get<bool>();
+
+        const VtArray<SdfPath> members = value[MEMBERS_KEY].Get<VtArray<SdfPath>>();
+
+        for (const auto& member : members)
+        {
+            layers[layerName].members.insert(member.GetString());
+        }
     }
-    else
+
+    if (!data.empty())
     {
         updateAllVisibilities();
     }
@@ -213,17 +253,13 @@ void DisplayLayerDisplayLayer::createNewLayer(const std::string& layerName)
         std::runtime_error(layerName + " already exists.");
     }
 
-    layers[layerName] = VtDictionary();
-    layers[layerName][membersKey] = VtDictionary();
-    layers[layerName][visibilityKey] = true;
-
-    updateMetadata();
+    layers[layerName].isVisible = true;
 }
 
 
 bool DisplayLayerDisplayLayer::removeLayer(const std::string& layerName)
 {
-    if (!layerExists())
+    if (!layerExists(layerName))
     {
         return false;
     }
@@ -231,7 +267,6 @@ bool DisplayLayerDisplayLayer::removeLayer(const std::string& layerName)
     setLayerVisibility(layerName, true);
 
     layers.erase(layerName);
-    updateMetadata();
 
     return true;
 }
@@ -246,54 +281,51 @@ void DisplayLayerDisplayLayer::addItemToLayer(const std::string& layerName,
     }
 
     // Check if prim is already in another layer
-    for (const auto& layer : layers)
+    for (const auto& layerData : layers)
     {
-        if (layer[membersKey].count(path) > 0)
+
+        if (layerData.second.members.count(path.GetString()) > 0)
         {
             // already added to this layer
-            if (layer == layerName)
+            if (layerData.first == layerName)
             {
-                return true;
+                return;
             }
             
             // added to another layer
-            std::runtime_error(std::string(path) + " is already in another layer");
+            std::runtime_error(path.GetString() + " is already in another layer");
         }
     }
 
-    auto prim = this.stage->GetPrimAtPath(path);
+    auto prim = stage->GetPrimAtPath(path);
 
     if (!prim || !UsdGeomImageable(prim))
     {
-        throw std::runtime_error(std::string(path) + " doesn't exist or is not"
+        throw std::runtime_error(path.GetString() + " doesn't exist or is not"
                                     + " UsdGeomImageable.");
     }
 
-    layers[layerName][membersKey][path] = true;
+    layers[layerName].members.insert(path.GetString());
 
-    updateMetadata();
-
-    bool isVisible = layers[layerName][visibilityKey];
-    updateMemberVisibility(path, isVisible);
+    updateMemberVisibility(path, layers[layerName].isVisible);
 }
 
 
 bool DisplayLayerDisplayLayer::removeItemFromLayer(const std::string& layerName,
                                                     const SdfPath& path)
 {
-    if (!layerExists(layerName) || layers[layerName][membersKey].count(path) == 0)
+    if (!layerExists(layerName) || layers[layerName].members.count(path.GetString()) == 0)
     {
         return false;
     }
 
-    layers[layerName][membersKey].erase(path);
-    updateMetadata();
+    layers[layerName].members.erase(path.GetString());
 
-    UsdLayerRefPtr originalLayer = stage->GetEditTarget();
+    SdfLayerRefPtr originalLayer = stage->GetEditTarget().GetLayer();
 
     if (originalLayer != overrideLayer)
     {
-        stage->setEditTarget(overrideLayer);
+        stage->SetEditTarget(overrideLayer);
     }
 
     // Revert visibility of item
@@ -301,7 +333,7 @@ bool DisplayLayerDisplayLayer::removeItemFromLayer(const std::string& layerName,
 
     if (originalLayer != overrideLayer)
     {
-        stage->setEditTarget(originalLayer);
+        stage->SetEditTarget(originalLayer);
     }
 
     return true;
@@ -310,21 +342,22 @@ bool DisplayLayerDisplayLayer::removeItemFromLayer(const std::string& layerName,
 
 void DisplayLayerDisplayLayer::updateAllVisibilities()
 {
-    UsdLayerRefPtr originalLayer = stage->GetEditTarget();
+    SdfLayerRefPtr originalLayer = stage->GetEditTarget().GetLayer();
     
     if (originalLayer != overrideLayer)
     {
-        stage->setEditTarget(overrideLayer);
+        stage->SetEditTarget(overrideLayer);
     }
 
-    for (const auto& layerName : layers)
+    for (const auto& layerData : layers)
     {
+        std::string layerName = layerData.first;
         updateLayerVisibilities(layerName);
     }
 
     if (originalLayer != overrideLayer)
     {
-        stage->setEditTarget(originalLayer);
+        stage->SetEditTarget(originalLayer);
     }
 }
 
@@ -339,17 +372,17 @@ void DisplayLayerDisplayLayer::updateLayerVisibilities(const std::string& layerN
         return;
     }
 
-    bool isVisible = layers[layerName][visibilityKey];
+    bool isVisible = layers[layerName].isVisible;
 
-    for (const auto& path : layers[layerName][membersKey])
+    for (const auto& path : layers[layerName].members)
     {
-        bool success = updateMemberVisibility(path, isVisible);
+        bool success = updateMemberVisibility(SdfPath(path), isVisible);
 
         if (!success)
         {
             // Failure => prim path either doesn't exist or is not UsdGeomImageable
             // Delete this prim from the layer
-            layers[layerName][membersKey].erase(path);
+            layers[layerName].members.erase(path);
         }
     }
 }
@@ -364,33 +397,32 @@ void DisplayLayerDisplayLayer::setLayerVisibility(const std::string& layerName,
     }
 
     // If current visibility is the same as the new one, return
-    if (layers[layerName][visibilityKey] == isVisible)
+    if (layers[layerName].isVisible == isVisible)
     {
         return;
     }
 
-    layers[layerName][visibilityKey] = isVisible;
+    layers[layerName].isVisible = isVisible;
 
-    updateMetadata();
-
-    UsdLayerRefPtr originalLayer = stage->GetEditTarget();
+    SdfLayerRefPtr originalLayer = stage->GetEditTarget().GetLayer();
     
     if (originalLayer != overrideLayer)
     {
-        stage->setEditTarget(overrideLayer);
+        stage->SetEditTarget(overrideLayer);
     }
 
     updateLayerVisibilities(layerName);
 
     if (originalLayer != overrideLayer)
     {
-        stage->setEditTarget(originalLayer);
+        stage->SetEditTarget(originalLayer);
     }
 }
 
 void DisplayLayerDisplayLayer::saveLayer()
 {
-    overrideLayer->save();
+    updateMetadata();
+    overrideLayer->Save();
 }
 
 
