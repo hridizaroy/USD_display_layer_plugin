@@ -6,20 +6,12 @@ class DisplayLayersPluginContainer(PluginContainer):
     def registerPlugins(self, plugRegistry, usdviewApi):
         self.displayLayersUIModule = self.deferredImport(".DisplayLayersUI")
 
-        sendMail = self.deferredImport(".sendMail")
-
         self._displayLayersUI = None
 
         self._openDisplayLayersUI = plugRegistry.registerCommandPlugin(
             "DisplayLayersPluginContainer.openDisplayLayersUI",
             "Open Display Layers UI",
             self.openDisplayLayersUI
-        )
-
-        self._sendMail = plugRegistry.registerCommandPlugin(
-            "DisplayLayersPluginContainer.sendMail",
-            "Send Mail",
-            sendMail.SendMail
         )
 
     def openDisplayLayersUI(self, usdviewApi):
@@ -30,8 +22,7 @@ class DisplayLayersPluginContainer(PluginContainer):
         
 
     def configureView(self, plugRegistry, plugUIBuilder):
-        menu = plugUIBuilder.findOrCreateMenu("Display Layers")
+        menu = plugUIBuilder.findOrCreateMenu("Display Layer")
         menu.addItem(self._openDisplayLayersUI)
-        menu.addItem(self._sendMail)      
 
 Tf.Type.Define(DisplayLayersPluginContainer)

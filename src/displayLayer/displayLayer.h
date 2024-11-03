@@ -243,6 +243,8 @@ public:
     DISPLAYLAYER_API
     void updateMetadata() const;
 
+    DISPLAYLAYER_API
+    TfToken getLayersKey() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

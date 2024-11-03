@@ -154,6 +154,9 @@ WRAP_CUSTOM {
 
         .def("updateMetadata",
             &This::updateMetadata)
+
+        .def("getLayersKey",
+            &This::getLayersKey)
     ;
 }
 

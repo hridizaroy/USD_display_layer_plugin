@@ -287,6 +287,7 @@ bool DisplayLayerDisplayLayer::removeLayer(const std::string& layerName)
     }
 
     setLayerVisibility(layerName, true);
+    setLayerHighlight(layerName, false);
 
     layers.erase(layerName);
 
@@ -441,5 +442,9 @@ void DisplayLayerDisplayLayer::updateMetadata() const
     GetPrim().SetCustomDataByKey(LAYERS_KEY, VtValue(layers));
 }
 
+TfToken DisplayLayerDisplayLayer::getLayersKey() const
+{
+    return LAYERS_KEY;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

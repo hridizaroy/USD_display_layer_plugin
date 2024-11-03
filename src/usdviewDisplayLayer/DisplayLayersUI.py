@@ -1,19 +1,28 @@
-import DisplayLayersContainer
-
 from pxr.Usdviewq.qt import QtWidgets, QtCore
+import displaylayerplugin.DisplayLayer as DL
 
 class DisplayLayersUI:
-    __slots__ = ["__displayLayersContainer", "__layerNameInput", "__table", \
-                "usdviewApi", "__layerNameCol"]
+    __slots__ = ["__displayLayer", "__path", "__layerNameInput",
+                "__table", "usdviewApi", "__layerNameCol"]
                 
     def __init__(self, usdviewApi):
-        self.__displayLayersContainer = \
-            DisplayLayersContainer.DisplayLayersContainer(usdviewApi.dataModel.stage)
-        self.__displayLayersContainer.register_observer(self)
+        self.__path = "/DisplayLayerContainer"
+
+        stage = usdviewApi.dataModel.stage
+
+        prim = stage.GetPrimAtPath(self.__path)
+        if not prim:
+            # Add layer prim to stage
+            self.__displayLayer = DL.DisplayLayer.Define(stage, self.__path)
+            self.__displayLayer.initialize(stage)
+        else:
+            self.__displayLayer = DL.DisplayLayer(prim)
+            layers = prim.GetCustomDataByKey(self.__displayLayer.getLayersKey())
+            self.__displayLayer.initialize(stage, layers)
 
         self.usdviewApi = usdviewApi
 
-        table_header = ["Layer name", "Visible", "Add selected", \
+        table_header = ["Layer name", "Visible", "Highlight", "Add selected", \
                         "Remove selected", "Delete"]
         self.__layerNameCol = 0
         self.__table = QtWidgets.QTableWidget()
@@ -75,7 +84,7 @@ class DisplayLayersUI:
         layout = self.generate_create_new_layer_layout(dialog)
         dialog.setLayout(layout)
 
-        dialog.show()
+        dialog.exec_()
 
     def generate_create_new_layer_layout(self, dialog):
         layerNamelabel = QtWidgets.QLabel("Layer name:")
@@ -102,9 +111,11 @@ class DisplayLayersUI:
         buttonLayout.addWidget(createButton)
 
         closeButton.clicked.connect(lambda: dialog.close())
+
         createButton.clicked.connect(lambda: ( \
-                self.__displayLayersContainer.create_new_layer(\
+                self.__displayLayer.createNewLayer(\
                 self.__layerNameInput.text()), \
+                self.new_layer_added(self.__layerNameInput.text()), \
                 dialog.close()
             ))
         
@@ -117,19 +128,28 @@ class DisplayLayersUI:
 
         # Populate new row
         colPos = 0
+        QT_CHECKED_STATE = 2
 
         # Layer name
         self.__table.setItem(rowPos, colPos, QtWidgets.QTableWidgetItem(layer_name))
         colPos += 1
 
         # Visibility
-        QT_CHECKED_STATE = 2
         visibilityCheckbox = QtWidgets.QCheckBox()
         visibilityCheckbox.setChecked(True)
         visibilityCheckbox.stateChanged.connect(lambda state, layer = layer_name: \
-                        self.__displayLayersContainer.set_layer_visibility( \
+                        self.__displayLayer.setLayerVisibility( \
                         layer, state == QT_CHECKED_STATE))
         self.__table.setCellWidget(rowPos, colPos, visibilityCheckbox)
+        colPos += 1
+
+        # Highlight
+        highlightCheckbox = QtWidgets.QCheckBox()
+        highlightCheckbox.setChecked(False)
+        highlightCheckbox.stateChanged.connect(lambda state, layer = layer_name: \
+                        self.__displayLayer.setLayerHighlight( \
+                        layer, state == QT_CHECKED_STATE))
+        self.__table.setCellWidget(rowPos, colPos, highlightCheckbox)
         colPos += 1
 
         # Add selected
@@ -148,8 +168,10 @@ class DisplayLayersUI:
 
         # Delete
         deleteButton = QtWidgets.QPushButton("X")
-        deleteButton.clicked.connect(lambda: \
-            self.__displayLayersContainer.remove_layer(layer_name))
+        deleteButton.clicked.connect(lambda: (\
+            self.__displayLayer.removeLayer(layer_name), \
+            self.layer_removed(layer_name)
+        ))
         self.__table.setCellWidget(rowPos, colPos, deleteButton)
 
     def layer_removed(self, layer_name):
@@ -168,11 +190,11 @@ class DisplayLayersUI:
 
         for prim in prims:
             path = prim.GetPath().pathString
-            self.__displayLayersContainer.add_item_to_layer(layer_name, path)
+            self.__displayLayer.addItemToLayer(layer_name, path)
 
     def remove_selected_from_layer(self, layer_name):
         prims = self.usdviewApi.dataModel.selection.getPrims()
 
         for prim in prims:
             path = prim.GetPath().pathString
-            self.__displayLayersContainer.remove_item_from_layer(layer_name, path)
+            self.__displayLayer.removeItemFromLayer(layer_name, path)
