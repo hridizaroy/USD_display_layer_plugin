@@ -116,7 +116,42 @@ void wrapDisplayLayerDisplayLayer()
 namespace {
 
 WRAP_CUSTOM {
+    typedef DisplayLayerDisplayLayer This;
 
+    _class
+        .def("initialize",
+            static_cast<void (This::*)(const UsdStagePtr&, const VtDictionary&)>(&This::initialize),
+            (arg("stage"), arg("data")))
+        .def("initialize",
+            static_cast<void (This::*)(const UsdStagePtr&)>(&This::initialize),
+            (arg("stage")))
+
+        .def("createNewLayer",
+            &This::createNewLayer,
+            (arg("layerName")))
+        .def("removeLayer",
+            &This::removeLayer,
+            (arg("layerName")))
+
+        .def("addItemToLayer",
+            &This::addItemToLayer,
+            (arg("layerName"), arg("path")))
+        .def("removeItemFromLayer",
+            &This::removeItemFromLayer,
+            (arg("layerName"), arg("path")))
+
+        .def("updateAllVisibilities",
+            &This::updateAllVisibilities)
+        .def("updateLayerVisibilities",
+            &This::updateLayerVisibilities,
+            (arg("layerName")))
+        .def("setLayerVisibility",
+            &This::setLayerVisibility,
+            (arg("layerName"), arg("isVisible")))
+
+        .def("saveLayer",
+            &This::saveLayer)
+    ;
 }
 
 }

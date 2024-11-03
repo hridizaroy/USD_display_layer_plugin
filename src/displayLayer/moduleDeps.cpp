@@ -25,7 +25,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
         TfToken("vt")
     };
     TfScriptModuleLoader::GetInstance().
-        RegisterLibrary(TfToken("displayLayer"), TfToken("pxr.DisplayLayer"), reqs);
+        RegisterLibrary(TfToken("displayLayer"), TfToken("displaylayerplugin.DisplayLayer"), reqs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

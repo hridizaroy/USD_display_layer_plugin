@@ -1,4 +1,5 @@
-from pxr import DisplayLayer, Sdf, Vt, UsdGeom
+from pxr import Sdf, Vt, UsdGeom
+import displaylayerplugin.DisplayLayer as DisplayLayer
 
 class DisplayLayersContainer:
     __slots__ = ["__stage", "__path", "__prim", "__layers", "__layersKey", \

@@ -2,9 +2,6 @@ from pxr import Tf
 from pxr.Usdviewq.plugin import PluginContainer
 from pxr.Usdviewq.common import QtWidgets, QtCore
 
-from pxr import DisplayLayer
-
-
 class DisplayLayersPluginContainer(PluginContainer):
     def registerPlugins(self, plugRegistry, usdviewApi):
         self.displayLayersUIModule = self.deferredImport(".DisplayLayersUI")

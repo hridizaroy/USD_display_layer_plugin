@@ -210,7 +210,7 @@ public:
 
     DISPLAYLAYER_API
     void initialize(const UsdStagePtr &stage,
-                    const VtDictionary& data = VtDictionary());
+                    const VtDictionary& data);
 
     DISPLAYLAYER_API
     void createNewLayer(const std::string& layerName);
