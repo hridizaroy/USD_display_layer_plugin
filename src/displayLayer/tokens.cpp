@@ -9,10 +9,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 DisplayLayerTokensType::DisplayLayerTokensType() :
-    visible("visible", TfToken::Immortal),
     DisplayLayer("DisplayLayer", TfToken::Immortal),
     allTokens({
-        visible,
         DisplayLayer
     })
 {

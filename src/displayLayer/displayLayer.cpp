@@ -86,46 +86,13 @@ DisplayLayerDisplayLayer::_GetTfType() const
     return _GetStaticTfType();
 }
 
-UsdAttribute
-DisplayLayerDisplayLayer::GetVisibleAttr() const
-{
-    return GetPrim().GetAttribute(DisplayLayerTokens->visible);
-}
-
-UsdAttribute
-DisplayLayerDisplayLayer::CreateVisibleAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(DisplayLayerTokens->visible,
-                       SdfValueTypeNames->Bool,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-namespace {
-static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
-{
-    TfTokenVector result;
-    result.reserve(left.size() + right.size());
-    result.insert(result.end(), left.begin(), left.end());
-    result.insert(result.end(), right.begin(), right.end());
-    return result;
-}
-}
-
 /*static*/
 const TfTokenVector&
 DisplayLayerDisplayLayer::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames = {
-        DisplayLayerTokens->visible,
-    };
+    static TfTokenVector localNames;
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdTyped::GetSchemaAttributeNames(true),
-            localNames);
+        UsdTyped::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

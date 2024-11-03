@@ -31,13 +31,6 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateVisibleAttr(DisplayLayerDisplayLayer &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateVisibleAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
-}
 
 static std::string
 _Repr(const DisplayLayerDisplayLayer &self)
@@ -80,13 +73,6 @@ void wrapDisplayLayerDisplayLayer()
 
         .def(!self)
 
-        
-        .def("GetVisibleAttr",
-             &This::GetVisibleAttr)
-        .def("CreateVisibleAttr",
-             &_CreateVisibleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

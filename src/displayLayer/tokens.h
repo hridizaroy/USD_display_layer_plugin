@@ -41,14 +41,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use DisplayLayerTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(DisplayLayerTokens->visible);
+///     gprim.GetMyTokenValuedAttr().Set(DisplayLayerTokens->DisplayLayer);
 /// \endcode
 struct DisplayLayerTokensType {
     DISPLAYLAYER_API DisplayLayerTokensType();
-    /// \brief "visible"
-    /// 
-    /// DisplayLayerDisplayLayer
-    const TfToken visible;
     /// \brief "DisplayLayer"
     /// 
     /// Schema identifer and family for DisplayLayerDisplayLayer

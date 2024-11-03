@@ -7,8 +7,5 @@ class DisplayLayer "DisplayLayer" (
     doc = "Represents display layers for organizing and controlling visibility of prims."
 )
 {
-    bool visible = 1 (
-        doc = "Controls the visibility of all prims in this layer."
-    )
 }
 

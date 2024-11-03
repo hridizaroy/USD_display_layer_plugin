@@ -47,6 +47,5 @@ void wrapDisplayLayerTokens()
 {
     boost::python::class_<DisplayLayerTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "visible", DisplayLayerTokens->visible);
     _AddToken(cls, "DisplayLayer", DisplayLayerTokens->DisplayLayer);
 }

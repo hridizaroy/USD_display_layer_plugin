@@ -21,35 +21,8 @@ class DisplayLayer "DisplayLayer" (
     doc = """Represents display layers for organizing and controlling visibility of prims."""
 
 	customData = {
-		string className = "DisplayLayer"        
-        dictionary layers = {
-            bool testField = true   
-        }
+		string className = "DisplayLayer"
 	}
 )
 {
-    
-    bool visible = true (
-        doc = "Controls the visibility of all prims in this layer."
-    )
-    # color3f color = (0.5, 0.5, 0.5) (
-    #     doc = "The display color for this layer in the UI."
-    # )
-    # string[] members = [] (
-    #     doc = "Paths to prims that are members of this display layer."
-    # )
-    # int layerIndex = 0 (
-    #     doc = "Determines the placement of this layer in the UI."
-    # )
 }
-
-
-# class "DisplayLayerAPI" (
-#    inherits = </APISchemaBase>
-#    doc = """API to associate a prim with a display layer."""
-# )
-# {
-#    rel displayLayer (
-#        doc = "Relationship to the associated DisplayLayer prim."
-#    )
-# }

@@ -14,7 +14,6 @@
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "./tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -130,28 +129,6 @@ private:
     // override SchemaBase virtuals.
     DISPLAYLAYER_API
     const TfType &_GetTfType() const override;
-
-public:
-    // --------------------------------------------------------------------- //
-    // VISIBLE 
-    // --------------------------------------------------------------------- //
-    /// Controls the visibility of all prims in this layer.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `bool visible = 1` |
-    /// | C++ Type | bool |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
-    DISPLAYLAYER_API
-    UsdAttribute GetVisibleAttr() const;
-
-    /// See GetVisibleAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    DISPLAYLAYER_API
-    UsdAttribute CreateVisibleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
