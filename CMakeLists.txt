@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 # Define project.
 project(
     displayLayerPlugin
-    VERSION 0.0.0
+    VERSION 0.1.0
     DESCRIPTION "A custom USD schema and usdview plugin for a Display Layer."
     LANGUAGES CXX
 )
