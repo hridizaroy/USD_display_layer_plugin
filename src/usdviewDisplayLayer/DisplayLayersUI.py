@@ -10,6 +10,7 @@ class DisplayLayersUI:
 
         stage = usdviewApi.dataModel.stage
 
+        # Check if a Display Layer Prim already exists at the given path
         prim = stage.GetPrimAtPath(self.__path)
         if not prim:
             # Add layer prim to stage
@@ -22,6 +23,7 @@ class DisplayLayersUI:
 
         self.usdviewApi = usdviewApi
 
+        # Layer Table init
         table_header = ["Layer name", "Visible", "Highlight", "Add selected", \
                         "Remove selected", "Delete"]
         self.__layerNameCol = 0
@@ -31,6 +33,9 @@ class DisplayLayersUI:
         self.__table.setHorizontalHeaderLabels(table_header)
 
 
+    """
+    Opens the Display Layers UI
+    """
     def open_display_layers_UI(self):
         window = self.usdviewApi.qMainWindow
         dialog = QtWidgets.QDialog(window)
@@ -44,9 +49,11 @@ class DisplayLayersUI:
 
         dialog.show()
 
+    """
+    Generates the layout for the main Display Layers UI
+    """
     def generate_main_UI_layout(self, dialog):
-        # VBox for overall
-        # Table Widget, HBox containing buttons
+        # Add table and bottom bar buttons
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.__table)
         
@@ -56,8 +63,11 @@ class DisplayLayersUI:
         return layout
 
 
+    """
+    Generates the layout for the buttons in the bar below the table
+    """
     def generate_bottom_bar_buttons(self, dialog):
-        # create buttons
+        # Buttons for the bar below the table
         closeButton = QtWidgets.QPushButton("Close")
         createNewLayerButton = QtWidgets.QPushButton("Create new layer")
 
@@ -73,6 +83,9 @@ class DisplayLayersUI:
         return buttonLayout
 
 
+    """
+    Opens the "Create New Layer" dialog
+    """
     def open_create_new_layer_dialog(self):
         window = self.usdviewApi.qMainWindow
         dialog = QtWidgets.QDialog(window)
@@ -84,10 +97,20 @@ class DisplayLayersUI:
         layout = self.generate_create_new_layer_layout(dialog)
         dialog.setLayout(layout)
 
+        # Call exec_ because we want the rest of the UI to be inactive until
+        # this dialog is closed
+        # Because we don't want multiple "Create new layer" dialogs being open
+        # at the same time
         dialog.exec_()
 
+    """
+    Layout for the "Create New Layer" dialog
+    """
     def generate_create_new_layer_layout(self, dialog):
         layerNamelabel = QtWidgets.QLabel("Layer name:")
+
+        # Store layer name input as property because we will need its value
+        # when using the DisplayLayer API
         self.__layerNameInput = QtWidgets.QLineEdit()
 
         buttons = self.generate_create_new_layer_buttons(dialog)
@@ -100,6 +123,9 @@ class DisplayLayersUI:
 
         return layout
 
+    """
+    Buttons for the "Create New Layer" dialog
+    """
     def generate_create_new_layer_buttons(self, dialog):
         closeButton = QtWidgets.QPushButton("Close")
         createButton = QtWidgets.QPushButton("Create")
@@ -121,6 +147,9 @@ class DisplayLayersUI:
         
         return buttonLayout
 
+    """
+    Updates the table UI with the newly added layer
+    """
     def new_layer_added(self, layer_name):
         # Add new row to table
         rowPos = self.__table.rowCount()
@@ -174,6 +203,9 @@ class DisplayLayersUI:
         ))
         self.__table.setCellWidget(rowPos, colPos, deleteButton)
 
+    """
+    Removes the layer row from the table UI
+    """
     def layer_removed(self, layer_name):
         # loop through table until you find the layer
         numRows = self.__table.rowCount()
@@ -185,6 +217,9 @@ class DisplayLayersUI:
                 self.__table.removeRow(row) 
 
     
+    """
+    Handler for "Add selected to layer" buttons
+    """
     def add_selected_to_layer(self, layer_name):
         prims = self.usdviewApi.dataModel.selection.getPrims()
 
@@ -192,6 +227,9 @@ class DisplayLayersUI:
             path = prim.GetPath().pathString
             self.__displayLayer.addItemToLayer(layer_name, path)
 
+    """
+    Handler for "Remove selected from layer" buttons
+    """
     def remove_selected_from_layer(self, layer_name):
         prims = self.usdviewApi.dataModel.selection.getPrims()
 

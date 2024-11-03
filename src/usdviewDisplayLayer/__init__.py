@@ -6,6 +6,8 @@ class DisplayLayersPluginContainer(PluginContainer):
     def registerPlugins(self, plugRegistry, usdviewApi):
         self.displayLayersUIModule = self.deferredImport(".DisplayLayersUI")
 
+        # Store it as property so that we can close and re-open display layers
+        # UI with saved state
         self._displayLayersUI = None
 
         self._openDisplayLayersUI = plugRegistry.registerCommandPlugin(
@@ -15,6 +17,7 @@ class DisplayLayersPluginContainer(PluginContainer):
         )
 
     def openDisplayLayersUI(self, usdviewApi):
+        # Create new UI object if it doesn't already exists
         if not self._displayLayersUI:
             self._displayLayersUI = self.displayLayersUIModule.DisplayLayersUI(usdviewApi)
 

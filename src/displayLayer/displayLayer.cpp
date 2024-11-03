@@ -137,7 +137,8 @@ bool DisplayLayerDisplayLayer::updateMemberVisibility(const SdfPath& path,
 {
     auto prim = stage->GetPrimAtPath(path);
 
-    if (!prim || !prim.IsActive() || !UsdGeomImageable(prim))
+    // Check if prim is valid
+    if (!prim.IsValid() || !prim.IsActive() || !UsdGeomImageable(prim))
     {
         return false;
     }
@@ -147,8 +148,49 @@ bool DisplayLayerDisplayLayer::updateMemberVisibility(const SdfPath& path,
     // Make sure we're making the edits in our override layer
     UsdEditContext editContext(stage, UsdEditTarget(overrideLayer));
 
+    // Update visibility of prim
     UsdGeomImageable imageablePrim(prim);
     imageablePrim.GetVisibilityAttr().Set(visibilityToken);
+
+    return true;
+}
+
+bool DisplayLayerDisplayLayer::updateMemberHighlight(const SdfPath& path,
+                        const std::string& layerName, bool isHighlighted) const
+{
+    if (!layerExists(layerName))
+    {
+        return false;
+    }
+
+    auto prim = stage->GetPrimAtPath(path);
+
+    // Check if prim is valid
+    if (!prim.IsValid() || !prim.IsActive() || !UsdGeomImageable(prim))
+    {
+        return false;
+    }
+
+    auto visibilityToken = getVisibilityToken(isVisible);
+
+    // Make sure we're making the edits in our highlight layer
+    UsdEditContext editContext(stage, UsdEditTarget(layers[layerName].highlightLayer));
+
+    // Update display color of prim
+    UsdGeomGprim gprim(prim);
+    if (gprim)
+    {
+        if (layers[layerName].isHighlighted)
+        {
+            // Set display color
+            gprim.GetDisplayColorAttr().Set(VtArray<GfVec3f>{HIGHLIGHT_COLOR});
+        }
+        else
+        {
+            // Revert display color
+            gprim.GetDisplayColorAttr().ClearAtTime(UsdTimeCode::Default());
+        }
+    }
 
     return true;
 }
@@ -158,6 +200,7 @@ void DisplayLayerDisplayLayer::updateLayerHighlight(const std::string& layerName
     // Make sure we're making the edits in our highlight layer
     UsdEditContext editContext(stage, UsdEditTarget(layers[layerName].highlightLayer));
     
+    // Change display color of all members of the given layer
     for (const auto& member: layers[layerName].members)
     {
         SdfPath path = SdfPath(member);
@@ -170,10 +213,12 @@ void DisplayLayerDisplayLayer::updateLayerHighlight(const std::string& layerName
             {
                 if (layers[layerName].isHighlighted)
                 {
+                    // Set display color
                     gprim.GetDisplayColorAttr().Set(VtArray<GfVec3f>{HIGHLIGHT_COLOR});
                 }
                 else
                 {
+                    // Revert display color
                     gprim.GetDisplayColorAttr().ClearAtTime(UsdTimeCode::Default());
                 }
             }
@@ -200,6 +245,7 @@ void DisplayLayerDisplayLayer::initialize(const UsdStagePtr& stage,
 {
     initialize(stage);
 
+    // Populate layers map with dictionary data
     for (auto& item : data)
     {
         const std::string& layerName = item.first;
@@ -219,6 +265,7 @@ void DisplayLayerDisplayLayer::initialize(const UsdStagePtr& stage,
         }
     }
 
+    // Update visibilities based on all pre-existing layers
     if (!data.empty())
     {
         updateAllVisibilities();
@@ -241,6 +288,8 @@ void DisplayLayerDisplayLayer::createNewLayer(const std::string& layerName)
     layers[layerName].isVisible = true;
 
     layers[layerName].isHighlighted = false;
+
+    // Create new override layer for each layer
     layers[layerName].highlightLayer = SdfLayer::CreateAnonymous();
     overrideLayer->InsertSubLayerPath(layers[layerName].highlightLayer->GetIdentifier());
 }
@@ -253,6 +302,7 @@ bool DisplayLayerDisplayLayer::removeLayer(const std::string& layerName)
         return false;
     }
 
+    // Revert visibility and display color of members before deleting layer
     setLayerVisibility(layerName, true);
     setLayerHighlight(layerName, false);
 
@@ -295,8 +345,10 @@ void DisplayLayerDisplayLayer::addItemToLayer(const std::string& layerName,
                                     + " UsdGeomImageable.");
     }
 
+    // Add prim to layer and update visibility
     layers[layerName].members.insert(path.GetString());
 
+    updateMemberHighlight(path, layerName, layers[layerName].isHighlighted);
     updateMemberVisibility(path, layers[layerName].isVisible);
 }
 
@@ -312,6 +364,9 @@ bool DisplayLayerDisplayLayer::removeItemFromLayer(const std::string& layerName,
     layers[layerName].members.erase(path.GetString());
 
     // Revert visibility of item
+    updateMemberHighlight(path, layerName, false);
+
+    // Revert visibility of item
     updateMemberVisibility(path, true);
 
     return true;
@@ -325,10 +380,33 @@ void DisplayLayerDisplayLayer::setLayerHighlight(const std::string& layerName,
         std::runtime_error("Layer " + layerName + " does not exist.");
     }
 
+    // If current highlight is the same as the new one, return
+    if (layers[layerName].isHighlighted == isHighlighted)
+    {
+        return;
+    }
+
     layers[layerName].isHighlighted = isHighlighted;
     updateLayerHighlight(layerName);
 }
 
+void DisplayLayerDisplayLayer::setLayerVisibility(const std::string& layerName,
+                                                    bool isVisible)
+{
+    if (!layerExists(layerName))
+    {
+        return;
+    }
+
+    // If current visibility is the same as the new one, return
+    if (layers[layerName].isVisible == isVisible)
+    {
+        return;
+    }
+
+    layers[layerName].isVisible = isVisible;
+    updateLayerVisibilities(layerName);
+}
 
 void DisplayLayerDisplayLayer::updateAllVisibilities()
 {
@@ -361,25 +439,6 @@ void DisplayLayerDisplayLayer::updateLayerVisibilities(const std::string& layerN
             layers[layerName].members.erase(path);
         }
     }
-}
-
-
-void DisplayLayerDisplayLayer::setLayerVisibility(const std::string& layerName,
-                                                    bool isVisible)
-{
-    if (!layerExists(layerName))
-    {
-        return;
-    }
-
-    // If current visibility is the same as the new one, return
-    if (layers[layerName].isVisible == isVisible)
-    {
-        return;
-    }
-
-    layers[layerName].isVisible = isVisible;
-    updateLayerVisibilities(layerName);
 }
 
 void DisplayLayerDisplayLayer::updateMetadata() const

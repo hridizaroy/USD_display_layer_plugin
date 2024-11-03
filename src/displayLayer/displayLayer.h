@@ -148,17 +148,21 @@ public:
 #include <unordered_set>
 
 private:
+    /// Describes a single layer that holds a group of prims
     struct Layer
     {
         // Using string instead of SdfPath because of hashing issues
         std::unordered_set<std::string> members;
+
         bool isVisible;
         bool isHighlighted;
+
         SdfLayerRefPtr highlightLayer;
 
+        // Needed for using this as a value in sets
         bool operator==(const Layer& other) const
         {
-            return isVisible == other.isVisible && members == other.members;
+            return members == other.members;
         }
     };
 
@@ -166,7 +170,7 @@ private:
     UsdStagePtr stage;
     SdfLayerRefPtr overrideLayer;
 
-    // Keys
+    // Keys for metadata
     const TfToken LAYERS_KEY = TfToken("layers");
     const TfToken MEMBERS_KEY = TfToken("members");
     const TfToken VISIBILITY_KEY = TfToken("isVisible");
@@ -174,52 +178,79 @@ private:
 
     const GfVec3f HIGHLIGHT_COLOR{1.0f, 0.0f, 0.0f};
 
+    /// Check if a layer with the given name exists in the layers map
     bool layerExists(const std::string& layerName) const;
 
+    /// Returns UsdGeom Visibility Token
     TfToken getVisibilityToken(const bool isVisible) const;
 
+    /// Updates visibility of the prim at the given path
     bool updateMemberVisibility(const SdfPath& path, const bool isVisible) const;
 
+    /// Updates display color of the prim at the given path
+    bool updateMemberHighlight(const SdfPath& path,
+                        const std::string& layerName, bool isHighlighted) const
+
+    /// Updates display color of the members of the given layer based on 
+    /// if the layer is highlighted
     void updateLayerHighlight(const std::string& layerName);
 
 public:
+    /// Initializes the stage and override layer
+    /// Needs to be called before performing any other operations on this prim
     DISPLAYLAYER_API
     void initialize(const UsdStagePtr& stage);
 
+    /// Populates the layers map with the given data in addition to initializing
+    /// Used when we are starting from a pre-existing Display Layer prim
     DISPLAYLAYER_API
     void initialize(const UsdStagePtr& stage,
                     const VtDictionary& data);
 
+    /// Add a new layer to the layers map
     DISPLAYLAYER_API
     void createNewLayer(const std::string& layerName);
 
+    /// Remove a layer from the layers map and update visibility and display
+    /// color of the layer's members
+    /// Returns false if the layer could not be removed (e.g., if it doesn't exist)
     DISPLAYLAYER_API
     bool removeLayer(const std::string& layerName);
 
+    /// Add a UsdGeomImageable prim to the given layer
+    /// Updates visibility and highlight color of prim
     DISPLAYLAYER_API
     void addItemToLayer(const std::string& layerName, const SdfPath& path);
 
+    /// Removes the given prim from the layer
+    /// Returns false if the prim could not be removed
+    /// (e.g., if the layer doesn't contain it)
     DISPLAYLAYER_API
     bool removeItemFromLayer(const std::string& layerName, const SdfPath& path);
 
+    /// Sets highlight status of the given layer and updates the display color
+    /// of its members
     DISPLAYLAYER_API
     void setLayerHighlight(const std::string& layerName, bool isHighlighted);
 
-    DISPLAYLAYER_API
-    void updateAllVisibilities();
-
-    DISPLAYLAYER_API
-    void updateLayerVisibilities(const std::string& layerName);
-
+    /// Sets visibility status of the given layer and updates the visibility
+    /// of its members
     DISPLAYLAYER_API
     void setLayerVisibility(const std::string& layerName, const bool isVisible);
 
-    /**
-    * Converts the layers map to a VtDictionary and adds it to the prim's metadata
-    */
+    /// Update visibility and display color of all members of all layers
+    DISPLAYLAYER_API
+    void updateAllVisibilities();
+
+    /// Update visibility of members of the given layer
+    DISPLAYLAYER_API
+    void updateLayerVisibilities(const std::string& layerName);
+
+    /// Converts the layers map to a VtDictionary and adds it to the prim's metadata
     DISPLAYLAYER_API
     void updateMetadata() const;
 
+    /// Returns the metadata key for storing the display layer's data
     DISPLAYLAYER_API
     TfToken getLayersKey() const;
 };
