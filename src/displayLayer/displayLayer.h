@@ -166,6 +166,7 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/base/gf/vec3f.h>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -175,6 +176,8 @@ private:
         // Using string instead of SdfPath because of hashing issues
         std::unordered_set<std::string> members;
         bool isVisible;
+        bool isHighlighted;
+        SdfLayerRefPtr highlightLayer;
 
         bool operator==(const Layer& other) const
         {
@@ -190,26 +193,24 @@ private:
     const TfToken LAYERS_KEY = TfToken("layers");
     const TfToken MEMBERS_KEY = TfToken("members");
     const TfToken VISIBILITY_KEY = TfToken("isVisible");
+    const TfToken HIGHLIGHT_KEY = TfToken("isHighlighted");
 
-    const std::string OVERRIDE_LAYER_NAME = "displayLayerOverrides.usda";
+    const GfVec3f HIGHLIGHT_COLOR{1.0f, 0.0f, 0.0f};
 
     bool layerExists(const std::string& layerName) const;
 
     TfToken getVisibilityToken(const bool isVisible) const;
 
-    bool updateMemberVisibility(const SdfPath& path, bool isVisible);
+    bool updateMemberVisibility(const SdfPath& path, const bool isVisible) const;
 
-    /**
-    * Converts the layers map to a VtDictionary and adds it to the prim's metadata
-    */
-    void updateMetadata() const;
+    void updateLayerHighlight(const std::string& layerName);
 
 public:
     DISPLAYLAYER_API
-    void initialize(const UsdStagePtr &stage);
+    void initialize(const UsdStagePtr& stage);
 
     DISPLAYLAYER_API
-    void initialize(const UsdStagePtr &stage,
+    void initialize(const UsdStagePtr& stage,
                     const VtDictionary& data);
 
     DISPLAYLAYER_API
@@ -225,16 +226,22 @@ public:
     bool removeItemFromLayer(const std::string& layerName, const SdfPath& path);
 
     DISPLAYLAYER_API
+    void setLayerHighlight(const std::string& layerName, bool isHighlighted);
+
+    DISPLAYLAYER_API
     void updateAllVisibilities();
 
     DISPLAYLAYER_API
     void updateLayerVisibilities(const std::string& layerName);
 
     DISPLAYLAYER_API
-    void setLayerVisibility(const std::string& layerName, bool isVisible);
+    void setLayerVisibility(const std::string& layerName, const bool isVisible);
 
+    /**
+    * Converts the layers map to a VtDictionary and adds it to the prim's metadata
+    */
     DISPLAYLAYER_API
-    void saveLayer();
+    void updateMetadata() const;
 
 };
 

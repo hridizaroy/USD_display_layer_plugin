@@ -139,6 +139,9 @@ WRAP_CUSTOM {
         .def("removeItemFromLayer",
             &This::removeItemFromLayer,
             (arg("layerName"), arg("path")))
+        .def("setLayerHighlight",
+            &This::setLayerHighlight,
+            (arg("layerName"), arg("isHighlighted")))
 
         .def("updateAllVisibilities",
             &This::updateAllVisibilities)
@@ -149,8 +152,8 @@ WRAP_CUSTOM {
             &This::setLayerVisibility,
             (arg("layerName"), arg("isVisible")))
 
-        .def("saveLayer",
-            &This::saveLayer)
+        .def("updateMetadata",
+            &This::updateMetadata)
     ;
 }
 

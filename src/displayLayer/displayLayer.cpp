@@ -147,8 +147,10 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <stdexcept>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/dictionary.h>
+#include <pxr/usd/usd/editContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -163,20 +165,20 @@ TfToken DisplayLayerDisplayLayer::getVisibilityToken(const bool isVisible) const
     return isVisible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible;
 }
 
-/**
-* The function calling this is responsible for setting stage edit target
-*/
 bool DisplayLayerDisplayLayer::updateMemberVisibility(const SdfPath& path,
-                                                        bool isVisible)
+                                                        bool isVisible) const
 {
     auto prim = stage->GetPrimAtPath(path);
 
-    if (!prim || !UsdGeomImageable(prim))
+    if (!prim || !prim.IsActive() || !UsdGeomImageable(prim))
     {
         return false;
     }
 
     auto visibilityToken = getVisibilityToken(isVisible);
+
+    // Make sure we're making the edits in our override layer
+    UsdEditContext editContext(stage, UsdEditTarget(overrideLayer));
 
     UsdGeomImageable imageablePrim(prim);
     imageablePrim.GetVisibilityAttr().Set(visibilityToken);
@@ -184,45 +186,52 @@ bool DisplayLayerDisplayLayer::updateMemberVisibility(const SdfPath& path,
     return true;
 }
 
-void DisplayLayerDisplayLayer::updateMetadata() const
+void DisplayLayerDisplayLayer::updateLayerHighlight(const std::string& layerName)
 {
-    VtDictionary data;
-
-    for (const auto& pair : layers)
+    // Make sure we're making the edits in our highlight layer
+    UsdEditContext editContext(stage, UsdEditTarget(layers[layerName].highlightLayer));
+    
+    for (const auto& member: layers[layerName].members)
     {
-        const std::string& layerName = pair.first;
-        const Layer& layer = pair.second;
+        SdfPath path = SdfPath(member);
+        UsdPrim prim = stage->GetPrimAtPath(path);
 
-        VtDictionary layerData;
-        VtArray<SdfPath> members;
-
-        for (const auto& member : layer.members)
+        if (prim.IsValid() && prim.IsActive())
         {
-            members.push_back(SdfPath(member));
+            UsdGeomGprim gprim(prim);
+            if (gprim)
+            {
+                if (layers[layerName].isHighlighted)
+                {
+                    gprim.GetDisplayColorAttr().Set(VtArray<GfVec3f>{HIGHLIGHT_COLOR});
+                }
+                else
+                {
+                    gprim.GetDisplayColorAttr().ClearAtTime(UsdTimeCode::Default());
+                }
+            }
         }
-
-        layerData[VISIBILITY_KEY] = layer.isVisible;
-        layerData[MEMBERS_KEY] = members;
-
-        data[layerName] = layerData;
     }
 
-    GetPrim().SetCustomDataByKey(LAYERS_KEY, VtValue(layers));
+    if (!layers[layerName].isHighlighted)
+    {
+        layers[layerName].highlightLayer->Clear();
+    }
 }
 
 
-void DisplayLayerDisplayLayer::initialize(const UsdStagePtr &stage)
+void DisplayLayerDisplayLayer::initialize(const UsdStagePtr& stage)
 {
     this->stage = stage;
-    overrideLayer = SdfLayer::CreateNew(OVERRIDE_LAYER_NAME);
+    overrideLayer = SdfLayer::CreateAnonymous();
+    stage->GetRootLayer()->InsertSubLayerPath(overrideLayer->GetIdentifier());
 }
 
 
-void DisplayLayerDisplayLayer::initialize(const UsdStagePtr &stage,
+void DisplayLayerDisplayLayer::initialize(const UsdStagePtr& stage,
                                             const VtDictionary& data)
 {
-    this->stage = stage;
-    overrideLayer = SdfLayer::CreateNew(OVERRIDE_LAYER_NAME);
+    initialize(stage);
 
     for (auto& item : data)
     {
@@ -230,6 +239,10 @@ void DisplayLayerDisplayLayer::initialize(const UsdStagePtr &stage,
         VtDictionary value = item.second.Get<VtDictionary>();
 
         layers[layerName].isVisible = value[VISIBILITY_KEY].Get<bool>();
+        layers[layerName].isHighlighted = value[HIGHLIGHT_KEY].Get<bool>();
+
+        layers[layerName].highlightLayer = SdfLayer::CreateAnonymous();
+        overrideLayer->InsertSubLayerPath(layers[layerName].highlightLayer->GetIdentifier());
 
         const VtArray<SdfPath> members = value[MEMBERS_KEY].Get<VtArray<SdfPath>>();
 
@@ -248,12 +261,21 @@ void DisplayLayerDisplayLayer::initialize(const UsdStagePtr &stage,
 
 void DisplayLayerDisplayLayer::createNewLayer(const std::string& layerName)
 {
+    if (!stage)
+    {
+        throw std::runtime_error("Display Layer has not been initialized.");
+    }
+
     if (layerExists(layerName))
     {
         std::runtime_error(layerName + " already exists.");
     }
 
     layers[layerName].isVisible = true;
+
+    layers[layerName].isHighlighted = false;
+    layers[layerName].highlightLayer = SdfLayer::CreateAnonymous();
+    overrideLayer->InsertSubLayerPath(layers[layerName].highlightLayer->GetIdentifier());
 }
 
 
@@ -321,50 +343,36 @@ bool DisplayLayerDisplayLayer::removeItemFromLayer(const std::string& layerName,
 
     layers[layerName].members.erase(path.GetString());
 
-    SdfLayerRefPtr originalLayer = stage->GetEditTarget().GetLayer();
-
-    if (originalLayer != overrideLayer)
-    {
-        stage->SetEditTarget(overrideLayer);
-    }
-
     // Revert visibility of item
     updateMemberVisibility(path, true);
 
-    if (originalLayer != overrideLayer)
+    return true;
+}
+
+void DisplayLayerDisplayLayer::setLayerHighlight(const std::string& layerName,
+                                                const bool isHighlighted)
+{
+    if (!layerExists(layerName))
     {
-        stage->SetEditTarget(originalLayer);
+        std::runtime_error("Layer " + layerName + " does not exist.");
     }
 
-    return true;
+    layers[layerName].isHighlighted = isHighlighted;
+    updateLayerHighlight(layerName);
 }
 
 
 void DisplayLayerDisplayLayer::updateAllVisibilities()
 {
-    SdfLayerRefPtr originalLayer = stage->GetEditTarget().GetLayer();
-    
-    if (originalLayer != overrideLayer)
-    {
-        stage->SetEditTarget(overrideLayer);
-    }
-
     for (const auto& layerData : layers)
     {
         std::string layerName = layerData.first;
+        updateLayerHighlight(layerName);
         updateLayerVisibilities(layerName);
-    }
-
-    if (originalLayer != overrideLayer)
-    {
-        stage->SetEditTarget(originalLayer);
     }
 }
 
 
-/**
-* The function calling this is responsible for setting the stage edit target
- */
 void DisplayLayerDisplayLayer::updateLayerVisibilities(const std::string& layerName)
 {
     if (!layerExists(layerName))
@@ -403,26 +411,34 @@ void DisplayLayerDisplayLayer::setLayerVisibility(const std::string& layerName,
     }
 
     layers[layerName].isVisible = isVisible;
-
-    SdfLayerRefPtr originalLayer = stage->GetEditTarget().GetLayer();
-    
-    if (originalLayer != overrideLayer)
-    {
-        stage->SetEditTarget(overrideLayer);
-    }
-
     updateLayerVisibilities(layerName);
-
-    if (originalLayer != overrideLayer)
-    {
-        stage->SetEditTarget(originalLayer);
-    }
 }
 
-void DisplayLayerDisplayLayer::saveLayer()
+void DisplayLayerDisplayLayer::updateMetadata() const
 {
-    updateMetadata();
-    overrideLayer->Save();
+    VtDictionary data;
+
+    for (const auto& pair : layers)
+    {
+        const std::string& layerName = pair.first;
+        const Layer& layer = pair.second;
+
+        VtDictionary layerData;
+        VtArray<SdfPath> members;
+
+        for (const auto& member : layer.members)
+        {
+            members.push_back(SdfPath(member));
+        }
+
+        layerData[VISIBILITY_KEY] = layer.isVisible;
+        layerData[MEMBERS_KEY] = members;
+        layerData[HIGHLIGHT_KEY] = layer.isHighlighted;
+
+        data[layerName] = layerData;
+    }
+
+    GetPrim().SetCustomDataByKey(LAYERS_KEY, VtValue(layers));
 }
 
 
