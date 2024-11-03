@@ -48,5 +48,8 @@ to be defined (instructions for Linux):
 | `PXR_PLUGINPATH_NAME` | `${DISPLAYLAYERPLUGIN_INSTALL_ROOT}/lib/usd`<br/>`${DISPLAYLAYERPLUGIN_INSTALL_ROOT}/plugin/usd` |
 | `LD_LIBRARY_PATH`     | `${DISPLAYLAYERPLUGIN_INSTALL_ROOT}/lib`                                                  |
 
+## Plugin demo
+![Display Layer Usdview Plugin](./images/displayLayer.gif)
+
 ## Attributions
 This project uses https://github.com/wetadigital/USDPluginExamples as a template for creating the build structure.
