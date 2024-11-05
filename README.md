@@ -7,6 +7,7 @@ A plugin for [Pixar's USD](https://github.com/PixarAnimationStudios/USD) (Univer
 - [Dependencies](#dependencies)
 - [Building](#building)
 - [Running](#running)
+- [Plugin Demo](#plugin-demo)
 - [Attributions](#attributions)
 
 ## USD Plugins
