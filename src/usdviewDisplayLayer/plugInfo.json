@@ -1,0 +1,16 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "displaylayerplugin.UsdviewDisplayLayer",
+            "Info": {
+                "Types": {
+                    "displaylayerplugin.UsdviewDisplayLayer.DisplayLayersPluginContainer": {
+                        "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
+                        "displayName": "Usdview Display Layer Plugin"
+                    }
+                }
+            }
+        }
+    ]
+}
