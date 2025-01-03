@@ -178,7 +178,7 @@ bool DisplayLayerDisplayLayer::updateMemberHighlight(const SdfPath& path,
     UsdGeomGprim gprim(prim);
     if (gprim)
     {
-        if (layers[layerName].isHighlighted)
+        if (isHighlighted)
         {
             // Set display color
             gprim.GetDisplayColorAttr().Set(VtArray<GfVec3f>{HIGHLIGHT_COLOR});
@@ -280,7 +280,7 @@ void DisplayLayerDisplayLayer::createNewLayer(const std::string& layerName)
 
     if (layerExists(layerName))
     {
-        std::runtime_error(layerName + " already exists.");
+        throw std::runtime_error(layerName + " already exists.");
     }
 
     layers[layerName].isVisible = true;
@@ -315,7 +315,7 @@ void DisplayLayerDisplayLayer::addItemToLayer(const std::string& layerName,
 {
     if (!layerExists(layerName))
     {
-        std::runtime_error("Layer \"" + layerName + "\" doesn't exist.");
+        throw std::runtime_error("Layer \"" + layerName + "\" doesn't exist.");
     }
 
     // Check if prim is already in another layer
@@ -331,7 +331,7 @@ void DisplayLayerDisplayLayer::addItemToLayer(const std::string& layerName,
             }
             
             // added to another layer
-            std::runtime_error(path.GetString() + " is already in another layer");
+            throw std::runtime_error(path.GetString() + " is already in another layer");
         }
     }
 
@@ -361,7 +361,7 @@ bool DisplayLayerDisplayLayer::removeItemFromLayer(const std::string& layerName,
 
     layers[layerName].members.erase(path.GetString());
 
-    // Revert visibility of item
+    // Revert highlight of item
     updateMemberHighlight(path, layerName, false);
 
     // Revert visibility of item
@@ -375,7 +375,7 @@ void DisplayLayerDisplayLayer::setLayerHighlight(const std::string& layerName,
 {
     if (!layerExists(layerName))
     {
-        std::runtime_error("Layer " + layerName + " does not exist.");
+        throw std::runtime_error("Layer " + layerName + " does not exist.");
     }
 
     // If current highlight is the same as the new one, return

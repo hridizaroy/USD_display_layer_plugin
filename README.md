@@ -14,7 +14,7 @@ A plugin for [Pixar's USD](https://github.com/PixarAnimationStudios/USD) (Univer
 
 **USD Display Layer Plugin** provides the following USD plugins:
 - [displayLayer](./src/displayLayer): A schema library defining a **DisplayLayer** prim type.
-- [usdviewDisplayLayer](./src/usdviewDisplayLayer): An usdview plugin providing a menu command to open a utility UI for managing the Display Layer.
+- [usdviewDisplayLayer](./src/usdviewDisplayLayer): A usdview plugin providing a menu command to open a utility UI for managing the Display Layer.
 
 ## Dependencies
 
