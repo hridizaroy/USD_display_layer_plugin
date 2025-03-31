@@ -2,15 +2,12 @@ from pxr import Tf
 from pxr.Usdviewq.plugin import PluginContainer
 from pxr.Usdviewq.common import QtWidgets, QtCore
 
-from pxr import DisplayLayer
-
-
 class DisplayLayersPluginContainer(PluginContainer):
     def registerPlugins(self, plugRegistry, usdviewApi):
         self.displayLayersUIModule = self.deferredImport(".DisplayLayersUI")
 
-        sendMail = self.deferredImport(".sendMail")
-
+        # Store it as property so that we can close and re-open display layers
+        # UI with saved state
         self._displayLayersUI = None
 
         self._openDisplayLayersUI = plugRegistry.registerCommandPlugin(
@@ -19,13 +16,8 @@ class DisplayLayersPluginContainer(PluginContainer):
             self.openDisplayLayersUI
         )
 
-        self._sendMail = plugRegistry.registerCommandPlugin(
-            "DisplayLayersPluginContainer.sendMail",
-            "Send Mail",
-            sendMail.SendMail
-        )
-
     def openDisplayLayersUI(self, usdviewApi):
+        # Create new UI object if it doesn't already exists
         if not self._displayLayersUI:
             self._displayLayersUI = self.displayLayersUIModule.DisplayLayersUI(usdviewApi)
 
@@ -33,8 +25,7 @@ class DisplayLayersPluginContainer(PluginContainer):
         
 
     def configureView(self, plugRegistry, plugUIBuilder):
-        menu = plugUIBuilder.findOrCreateMenu("Display Layers")
+        menu = plugUIBuilder.findOrCreateMenu("Display Layer")
         menu.addItem(self._openDisplayLayersUI)
-        menu.addItem(self._sendMail)      
 
 Tf.Type.Define(DisplayLayersPluginContainer)
